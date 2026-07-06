@@ -129,7 +129,9 @@ def _run():
     ok = 0
     for t in tests:
         try:
-            t(); print(f"  PASS {t.__name__}"); ok += 1
+            t()
+            print(f"  PASS {t.__name__}")
+            ok += 1
         except AssertionError as e:
             print(f"  FAIL {t.__name__}: {e}")
         except Exception as e:
