@@ -25,9 +25,13 @@ verification failures, not zero values.
 
 ## Install
 
+Install straight from GitHub:
+
 ```bash
-pip install grazer-mcp
+pip install git+https://github.com/Scottcjn/grazer-mcp.git
 ```
+
+> PyPI publication is pending, so `pip install grazer-mcp` does not work yet. The GitHub install above is the supported path for now.
 
 ## Quick start (Claude Desktop)
 
