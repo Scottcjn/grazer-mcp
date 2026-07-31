@@ -3,26 +3,16 @@ Error-contract tests for all four grazer-mcp tools.
 
 Validates that graze_trending, graze_discover, graze_feed, and graze_platforms
 return the documented error envelope {"ok": false, "error": {code, message,
-retryable, source, details}} on every failure mode — never a silent empty result.
+retryable, source, ...}} on every failure mode — never a silent empty result.
 
 Run: pytest tests/test_error_contract.py -v
 """
 import httpx
-import pytest
 
 from grazer_mcp.client import GrazerClient, PLATFORMS
 
 
 # ── helpers ──────────────────────────────────────────────────────
-
-VIDEO = {
-    "id": "abc123", "title": "Test", "agent": "tester",
-    "display_name": "Tester", "views": 10, "likes": 2,
-    "category": "other", "category_name": "Other", "duration_sec": 5.0,
-    "watch_url": "/watch/abc123", "thumbnail_url": "/thumbnails/abc123.jpg",
-    "created_at": 1700000000.0, "tags": ["test"],
-}
-
 
 def _mock(handler, **kwargs):
     transport = httpx.MockTransport(handler)
@@ -71,8 +61,9 @@ class TestPlatforms:
 class TestTrendingErrors:
     def test_http_500(self):
         r = _mock(_500).trending("bottube", 10)
-        _assert_err(r, "UPSTREAM_HTTP_ERROR")
+        _assert_err(r, "UPSTREAM_STATUS")
         assert r["error"]["retryable"] is True
+        assert r["error"]["status"] == 500
 
     def test_timeout(self):
         r = _mock(_timeout, timeout=5.0).trending("bottube", 10)
@@ -86,8 +77,9 @@ class TestTrendingErrors:
 
     def test_http_404(self):
         r = _mock(_404).trending("bottube", 10)
-        _assert_err(r, "UPSTREAM_HTTP_ERROR")
+        _assert_err(r, "UPSTREAM_STATUS")
         assert r["error"]["retryable"] is False
+        assert r["error"]["status"] == 404
 
 
 # ── graze_discover: 4 failure modes ──────────────────────────────
@@ -95,7 +87,7 @@ class TestTrendingErrors:
 class TestDiscoverErrors:
     def test_http_500(self):
         r = _mock(_500).discover("query", "bottube", 1, 10)
-        _assert_err(r, "UPSTREAM_HTTP_ERROR")
+        _assert_err(r, "UPSTREAM_STATUS")
         assert r["error"]["retryable"] is True
 
     def test_timeout(self):
@@ -110,7 +102,7 @@ class TestDiscoverErrors:
 
     def test_http_404(self):
         r = _mock(_404).discover("query", "bottube", 1, 10)
-        _assert_err(r, "UPSTREAM_HTTP_ERROR")
+        _assert_err(r, "UPSTREAM_STATUS")
         assert r["error"]["retryable"] is False
 
 
@@ -119,7 +111,7 @@ class TestDiscoverErrors:
 class TestFeedErrors:
     def test_http_500(self):
         r = _mock(_500).feed("bottube", 10, True)
-        _assert_err(r, "UPSTREAM_HTTP_ERROR")
+        _assert_err(r, "UPSTREAM_STATUS")
         assert r["error"]["retryable"] is True
 
     def test_timeout(self):
@@ -134,7 +126,7 @@ class TestFeedErrors:
 
     def test_http_404(self):
         r = _mock(_404).feed("bottube", 10, True)
-        _assert_err(r, "UPSTREAM_HTTP_ERROR")
+        _assert_err(r, "UPSTREAM_STATUS")
         assert r["error"]["retryable"] is False
 
 
@@ -143,18 +135,25 @@ class TestFeedErrors:
 class TestPlatformValidation:
     def test_bad_platform_trending(self):
         r = GrazerClient().trending("nonexistent", 10)
-        _assert_err(r, "BAD_PLATFORM")
+        _assert_err(r, "UNKNOWN_PLATFORM")
         assert r["error"]["retryable"] is False
+        assert "nonexistent" in r["error"]["message"]
 
     def test_bad_platform_discover(self):
         r = GrazerClient().discover("q", "nonexistent", 1, 10)
-        _assert_err(r, "BAD_PLATFORM")
+        _assert_err(r, "UNKNOWN_PLATFORM")
         assert r["error"]["retryable"] is False
 
     def test_bad_platform_feed(self):
         r = GrazerClient().feed("nonexistent", 10, True)
-        _assert_err(r, "BAD_PLATFORM")
+        _assert_err(r, "UNKNOWN_PLATFORM")
         assert r["error"]["retryable"] is False
+
+    def test_bad_platform_lists_supported(self):
+        r = GrazerClient().trending("bad", 10)
+        _assert_err(r, "UNKNOWN_PLATFORM")
+        assert "supported" in r["error"], f"supported missing: {r['error']}"
+        assert "bottube" in r["error"]["supported"]
 
 
 # ── input validation ────────────────────────────────────────────
@@ -171,17 +170,11 @@ class TestInputValidation:
         assert r["error"]["retryable"] is False
 
 
-# ── error details ───────────────────────────────────────────────
+# ── error details / extra fields ───────────────────────────────
 
 class TestErrorDetails:
-    def test_http_error_has_status(self):
+    def test_http_error_has_status_code(self):
         r = _mock(_500).trending("bottube", 10)
-        _assert_err(r, "UPSTREAM_HTTP_ERROR")
+        _assert_err(r, "UPSTREAM_STATUS")
         assert "status" in r["error"], f"status missing: {r['error']}"
-
-    def test_bad_platform_lists_supported(self):
-        r = GrazerClient().trending("bad", 10)
-        _assert_err(r, "BAD_PLATFORM")
-        d = r["error"].get("details", {})
-        assert "supported" in d, f"supported missing: {d}"
-        assert "bottube" in d["supported"]
+        assert r["error"]["status"] == 500
