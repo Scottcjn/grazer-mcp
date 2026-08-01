@@ -124,6 +124,69 @@ def test_bad_json_handled():
     assert not r["ok"] and r["error"]["code"] == "UPSTREAM_BAD_JSON"
 
 
+
+
+
+def test_trending_500_error_shape():
+    r = _client(lambda req: httpx.Response(500, json={"error": "boom"})).trending()
+    assert not r["ok"]
+    assert r["error"]["code"] == "UPSTREAM_STATUS"
+    assert r["error"]["retryable"] is True
+    assert "500" in r["error"]["message"]
+
+
+def test_trending_404_error_shape():
+    r = _client(lambda req: httpx.Response(404, json={"error": "nope"})).trending()
+    assert not r["ok"]
+    assert r["error"]["code"] == "UPSTREAM_STATUS"
+    assert r["error"]["retryable"] is False
+
+
+def test_discover_timeout_error_shape():
+    def h(req):
+        raise httpx.TimeoutException("slow")
+    r = _client(h).discover("ai")
+    assert not r["ok"]
+    assert r["error"]["code"] == "UPSTREAM_TIMEOUT"
+    assert r["error"]["retryable"] is True
+
+
+def test_discover_bad_json_error_shape():
+    r = _client(lambda req: httpx.Response(200, text="not-json")).discover("ai")
+    assert not r["ok"]
+    assert r["error"]["code"] == "UPSTREAM_BAD_JSON"
+    assert r["error"]["retryable"] is False
+
+
+def test_feed_404_error_shape_explicit():
+    r = _client(lambda req: httpx.Response(404, json={"error": "nope"})).feed()
+    assert not r["ok"]
+    assert r["error"]["code"] == "UPSTREAM_STATUS"
+    assert r["error"]["retryable"] is False
+
+
+def test_feed_timeout_error_shape():
+    def h(req):
+        raise httpx.TimeoutException("slow")
+    r = _client(h).feed()
+    assert not r["ok"]
+    assert r["error"]["code"] == "UPSTREAM_TIMEOUT"
+    assert r["error"]["retryable"] is True
+
+
+def test_feed_500_error_shape():
+    r = _client(lambda req: httpx.Response(500, json={"error": "boom"})).feed()
+    assert not r["ok"]
+    assert r["error"]["code"] == "UPSTREAM_STATUS"
+    assert r["error"]["retryable"] is True
+
+
+def test_feed_404_error_shape():
+    r = _client(lambda req: httpx.Response(404, json={"error": "nope"})).feed()
+    assert not r["ok"]
+    assert r["error"]["code"] == "UPSTREAM_STATUS"
+    assert r["error"]["retryable"] is False
+
 def _run():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     ok = 0
