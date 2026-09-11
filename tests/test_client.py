@@ -90,10 +90,17 @@ def test_feed_ranked_uses_v2_and_surfaces_explanation():
     assert r["ranker"] == "heuristic" and "Popularity" in r["explanation"] and r["count"] == 1
 
 
-def test_feed_latest_uses_v1():
+def test_feed_latest_uses_explicit_newest_catalog_sort():
     cap = {}
-    _client(_json({"mode": "latest", "videos": []}, cap)).feed("bottube", ranked=False)
-    assert "/api/feed" in cap["url"] and "/api/v2/feed" not in cap["url"]
+    r = _client(_json({"page": 1, "pages": 1, "total": 0, "videos": []}, cap)).feed(
+        "bottube", 7, ranked=False
+    )
+    assert "/api/videos" in cap["url"]
+    assert "page=1" in cap["url"] and "per_page=7" in cap["url"]
+    assert "sort=newest" in cap["url"]
+    assert "/api/feed" not in cap["url"] and "/api/v2/feed" not in cap["url"]
+    assert r["ranked"] is False and r["ranker"] == "latest"
+    assert "Newest-first" in r["explanation"]
 
 
 def test_unknown_platform_rejected():
