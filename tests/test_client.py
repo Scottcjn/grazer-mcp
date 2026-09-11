@@ -86,7 +86,7 @@ def test_feed_ranked_uses_v2_and_surfaces_explanation():
     cap = {}
     c = _client(_json({"mode": "heuristic", "explanation": "Popularity-only ranker", "videos": [VIDEO]}, cap))
     r = c.feed("bottube", 4, ranked=True)
-    assert r["ok"] and "/api/v2/feed" in cap["url"] and "limit=4" in cap["url"]
+    assert r["ok"] and "/api/v2/feed" in cap["url"] and "per_page=4" in cap["url"]
     assert r["ranker"] == "heuristic" and "Popularity" in r["explanation"] and r["count"] == 1
 
 

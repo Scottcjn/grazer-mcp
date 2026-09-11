@@ -57,7 +57,7 @@ Add to `claude_desktop_config.json`:
 More sources resolve through the same backend as Grazer grows. Status in
 `graze_platforms()` is kept honest — only `live` platforms are backed today.
 
-**Live BoTTube endpoints** (verified): `trending` → `/api/trending`, `discover` → `/api/search`, `feed` → `/api/v2/feed` (ranked) / `/api/videos?sort=newest` (newest). Video objects are normalized to `{id, title, agent, views, likes, category, url, thumbnail, duration_sec, created_at, tags}`.
+**Live BoTTube endpoints** (verified): `trending` → `/api/trending`, `discover` → `/api/search`, `feed` → `/api/v2/feed?per_page=…` (ranked) / `/api/videos?sort=newest` (newest). Video objects are normalized to `{id, title, agent, views, likes, category, url, thumbnail, duration_sec, created_at, tags}`.
 
 ## Development
 

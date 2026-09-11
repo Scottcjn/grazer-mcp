@@ -4,7 +4,7 @@
 Wired to the LIVE BoTTube discovery API (verified 2026-06-26):
   trending: GET /api/trending?limit=N
   search:   GET /api/search?q=...&page=N[&sort=&category=&min_views=]
-  feed:     GET /api/v2/feed?limit=N  (ranked)  |  /api/videos?page=1&per_page=N&sort=newest  (latest)
+  feed:     GET /api/v2/feed?per_page=N  (ranked)  |  /api/videos?page=1&per_page=N&sort=newest  (latest)
 
 Every method returns {"ok": True, ...} or a predictable {"ok": False, "error": {...}}
 object, never a silent empty result. Video objects are normalized to a common shape
@@ -137,7 +137,7 @@ class GrazerClient:
             return e
         bounded = clamp(limit, 1, 50)
         if ranked:
-            res = self._get("/api/v2/feed", {"limit": bounded})
+            res = self._get("/api/v2/feed", {"per_page": bounded})
         else:
             res = self._get("/api/videos", {
                 "page": 1, "per_page": bounded, "sort": "newest",
