@@ -12,8 +12,9 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-import httpx  # noqa: E402
-from grazer_mcp.client import GrazerClient  # noqa: E402
+import httpx
+
+from grazer_mcp.client import GrazerClient
 
 # A representative BoTTube video object (subset of the real fields).
 VIDEO = {
@@ -197,7 +198,7 @@ def _run():
             ok += 1
         except AssertionError as e:
             print(f"  FAIL {t.__name__}: {e}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - standalone runner reports any error per test
             print(f"  ERROR {t.__name__}: {type(e).__name__}: {e}")
     print(f"\n{ok}/{len(tests)} passed")
     return ok == len(tests)

@@ -29,11 +29,11 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import httpx  # noqa: E402
-import pytest  # noqa: E402
+import httpx
+import pytest
 
-from grazer_mcp import server  # noqa: E402
-from grazer_mcp.client import GrazerClient  # noqa: E402
+from grazer_mcp import server
+from grazer_mcp.client import GrazerClient
 
 # A representative BoTTube video object (subset of the real fields), reused for
 # the success-normalization assertions.

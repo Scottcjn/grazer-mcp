@@ -18,8 +18,6 @@ object — never a silent empty result.
 """
 from __future__ import annotations
 
-from typing import Optional
-
 try:  # mcp >= 2.0.0 removed mcp.server.fastmcp; FastMCP was renamed
     # MCPServer and moved to mcp.server.mcpserver. Same .tool()/.run() API.
     from mcp.server.mcpserver import MCPServer as FastMCP
@@ -46,8 +44,8 @@ def graze_trending(platform: str = "bottube", limit: int = 10) -> dict:
 
 @mcp.tool()
 def graze_discover(query: str, platform: str = "bottube", page: int = 1,
-                   sort: Optional[str] = None, category: Optional[str] = None,
-                   min_views: Optional[int] = None) -> dict:
+                   sort: str | None = None, category: str | None = None,
+                   min_views: int | None = None) -> dict:
     """Search/discover worthy content matching `query`.
 
     platform: see graze_platforms(). page: pagination (1+). Optional filters:

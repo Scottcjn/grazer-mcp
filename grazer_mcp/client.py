@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Grazer discovery client — pure logic, no MCP dependency (fully unit-testable).
 
 Wired to the LIVE BoTTube discovery API (verified 2026-06-26):
@@ -13,7 +12,7 @@ so the surface is stable as platforms are added.
 from __future__ import annotations
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -38,14 +37,14 @@ def clamp(n: Any, lo: int, hi: int) -> int:
 
 
 class GrazerClient:
-    def __init__(self, base_url: Optional[str] = None, timeout: Optional[float] = None,
-                 transport: Optional[httpx.BaseTransport] = None):
+    def __init__(self, base_url: str | None = None, timeout: float | None = None,
+                 transport: httpx.BaseTransport | None = None):
         self.base_url = (base_url or os.environ.get("GRAZER_API_URL", "https://bottube.ai")).rstrip("/")
         self.timeout = timeout if timeout is not None else float(os.environ.get("GRAZER_TIMEOUT", "20"))
         self._transport = transport  # for tests (httpx.MockTransport)
 
     # --- transport --- #
-    def _get(self, path: str, params: Optional[dict] = None) -> dict:
+    def _get(self, path: str, params: dict | None = None) -> dict:
         params = {k: v for k, v in (params or {}).items() if v is not None}
         try:
             with httpx.Client(timeout=self.timeout, follow_redirects=True,
@@ -64,7 +63,7 @@ class GrazerClient:
             return err("UPSTREAM_BAD_JSON", f"{path} returned non-JSON", retryable=False)
 
     # --- helpers --- #
-    def _check_platform(self, platform: str) -> Optional[dict]:
+    def _check_platform(self, platform: str) -> dict | None:
         if platform not in PLATFORMS:
             return err("UNKNOWN_PLATFORM", f"unsupported platform: {platform}",
                        retryable=False, supported=list(PLATFORMS))
@@ -109,8 +108,8 @@ class GrazerClient:
         return {"ok": True, "platform": platform, "count": len(items), "items": items}
 
     def discover(self, query: str, platform: str = "bottube", page: int = 1,
-                 sort: Optional[str] = None, category: Optional[str] = None,
-                 min_views: Optional[int] = None) -> dict:
+                 sort: str | None = None, category: str | None = None,
+                 min_views: int | None = None) -> dict:
         if not query or not query.strip():
             return err("BAD_REQUEST", "query is required", retryable=False)
         if (e := self._check_platform(platform)):
