@@ -21,7 +21,10 @@ jobs:
         run: pip install -e .
 
       - name: Install test tools
-        run: pip install pytest ruff
+        # Pinned: ruff has no config here, so its *default* rule set is the lint
+        # policy. An unpinned install picked up ruff 0.16 (wider defaults) and
+        # turned main red with no code change. Bump deliberately.
+        run: pip install pytest "ruff==0.16.9"
 
       - name: Run tests
         run: pytest -v
