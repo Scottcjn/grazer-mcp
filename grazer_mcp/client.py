@@ -3,7 +3,7 @@
 Wired to the LIVE BoTTube discovery API (verified 2026-06-26):
   trending: GET /api/trending?limit=N
   search:   GET /api/search?q=...&page=N[&sort=&category=&min_views=]
-  feed:     GET /api/v2/feed?limit=N  (ranked)  |  /api/feed?limit=N  (latest)
+  feed:     GET /api/v2/feed?per_page=N  (ranked)  |  /api/videos?page=1&per_page=N&sort=newest  (latest)
 
 Every method returns {"ok": True, ...} or a predictable {"ok": False, "error": {...}}
 object, never a silent empty result. Video objects are normalized to a common shape
@@ -125,15 +125,32 @@ class GrazerClient:
                 "count": len(items), "items": items}
 
     def feed(self, platform: str = "bottube", limit: int = 10, ranked: bool = True) -> dict:
-        """Discovery feed. ranked=True -> the popularity ranker (/api/v2/feed),
-        ranked=False -> newest (/api/feed)."""
+        """Discovery feed. ranked=True -> backend ranker; ranked=False -> newest.
+
+        BoTTube's ``/api/feed`` is itself a ranking surface and can switch
+        between heuristic/personalized modes, so it is not a reliable
+        implementation of the unranked/newest contract.  Use the catalog's
+        explicit newest sort when callers opt out of ranking.
+        """
         if (e := self._check_platform(platform)):
             return e
-        res = self._get("/api/v2/feed" if ranked else "/api/feed", {"limit": clamp(limit, 1, 50)})
+        bounded = clamp(limit, 1, 50)
+        if ranked:
+            res = self._get("/api/v2/feed", {"per_page": bounded})
+        else:
+            res = self._get("/api/videos", {
+                "page": 1, "per_page": bounded, "sort": "newest",
+            })
         if not res["ok"]:
             return res
         d = res["data"] if isinstance(res["data"], dict) else {}
         items = [self._normalize(v) for v in self._videos(res["data"])]
-        return {"ok": True, "platform": platform, "ranked": ranked,
-                "ranker": d.get("mode"), "explanation": d.get("explanation"),
-                "count": len(items), "items": items}
+        return {
+            "ok": True,
+            "platform": platform,
+            "ranked": ranked,
+            "ranker": d.get("mode") if ranked else "latest",
+            "explanation": d.get("explanation") if ranked else "Newest-first catalog order.",
+            "count": len(items),
+            "items": items,
+        }
